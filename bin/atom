@@ -1,0 +1,170 @@
+#!/bin/bash
+VERSION="0.8.0"
+INSTALL_PREFIX=
+CONFIG_DIR="$PREFIX/etc/atom"
+PKG=`which pkg`
+ATOM="$PKG -C $HOME/.atom/pkg.conf"
+export INSTALL_AS_USER=1
+
+PKG_PRE_ARGS=
+PKG_CMD=
+DEBUG=0
+ATOM_CMD=
+POST_ARGS=
+
+# this is the starting point, called on the very last line of this file
+main () {
+    debug "atom version v$VERSION"
+    debug " "
+
+    scan_args "$@"
+    print_configuration
+
+    if [ "$ATOM_CMD" == "" ] && [ "$PKG_CMD" == "" ]; then
+        echo "atom: no commands specified"
+        print_usage
+    fi
+
+    # TODO: if the PKG_CMD is "help" it should show some help for 'atom' and 'pkg'
+
+    if [ "$ATOM_CMD" != "" ]; then
+        run_atom_cmd
+        exit 0
+    fi
+
+    run_pkg_cmd
+}
+
+# parse the command line arguments
+scan_args() {
+    # for arg in "$@"; do
+    while [ "$1" != "" ]; do
+        arg=$1
+        value=$2
+        shift
+
+        echo "ARG: $arg"
+        # after a command is found, just push everything on to the post args list
+        if [ "$PKG_CMD" != "" ] || [ "$ATOM_CMD" != "" ]; then
+            POST_ARGS="$POST_ARGS $arg"
+            echo "pushed arg \"$arg\", continuing"
+            continue
+        fi
+
+        # match arguments
+        case $arg in
+            # verbose
+            -v|--version) print_version ;;
+            # debug, set flag
+            -d|--debug) pkg_push_arg $arg; DEBUG=1 ;;
+            # list arguments
+            -l) list_commands ;;
+            # simple args
+            -N|-4|-6) pkg_push_arg $arg ;;
+            # options
+            -o) pkg_push_arg $arg
+                pkg_push_arg $value
+                shift ;;
+            # don't allow these args, they'll mess up atom
+            -j|-c|-r|-C|-R) disallowed_arg $arg ;;
+            # pkg commands
+            add|alias|annotate|audit|autoremove|backup|check|clean|config|create|delete|fetch|help|info|install|lock|plugins|query|register|remove|repo|rquery|search|set|ssh|shell|shlib|stats|unlock|update|updating|upgrade|version|which)
+                PKG_CMD=$arg ;;
+            # atom commands
+            init|push|create-template)
+                ATOM_CMD=$arg ;;
+
+            *)
+                echo "atom: unknown argument: $arg"
+                print_usage ;;
+        esac
+    done
+}
+
+# push a pre-command argument on to the list
+pkg_push_arg() {
+    PKG_PRE_ARGS="$PKG_PRE_ARGS $1"
+}
+
+# throw an error if an argument is allowed for pkg, but would screw up atom
+disallowed_arg() {
+    die "the pkg argument \"$1\" is not allowed for atom"
+}
+
+# print the version of this software and exit
+print_version() {
+    echo "atom version v$VERSION"
+    echo "pkg version `$PKG -v`"
+    exit 0
+}
+
+# list the available commands and exit
+list_commands() {
+    echo "pkg commands:"
+    $PKG -l
+    echo "atom commands:"
+    echo "init"
+    echo "push"
+    echo "create-template"
+    exit 0
+}
+
+# print the available flags and exit
+print_usage() {
+    echo "Usage: atom [-v] [-d] [-l] [-N] [-o var=value] [-4|-6] <command> [<args>]"
+    echo""
+    echo "For more information on available commands and options see 'atom help' or 'pkg help'"
+    exit 0
+}
+
+# if debugging is turned on (-d flag), print configuration information
+print_configuration() {
+    debug "pkg: $PKG"
+    debug "pre command args: $PKG_PRE_ARGS"
+    debug "pkg command: $PKG_CMD"
+    debug "atom command: $ATOM_CMD"
+    debug "post command args: $POST_ARGS"
+}
+
+# parse pkg commands to be smart about which to ignore
+run_atom_cmd() {
+    case $ATOM_CMD in
+        init) atom_cmd_init ;;
+        push) atom_cmd_push ;;
+        create-template) atom_cmd_template ;;
+    esac
+    exit 0
+}
+
+atom_cmd_init() {
+    die "INIT NOT IMPLEMENTED YET"
+}
+
+atom_cmd_push() {
+    die "PUSH NOT IMPLEMENTED YET"
+}
+
+atom_cmd_template() {
+    die "CREATE-TEMPLATE NOT IMPLEMENTED YET"
+}
+
+run_pkg_cmd() {
+    debug "pkg command: $ATOM $ARGS"
+    $ATOM $PKG_PRE_ARGS $PKG_CMD $POST_ARGS
+}
+
+die() {
+    ERRMSG=$1
+    echo "ERROR: $ERRMSG"
+    exit 1
+}
+
+debug() {
+    if [ $DEBUG -eq 1 ]; then
+        echo $*
+    fi
+}
+
+# only run main after everything else has been defined
+# easier to read this way at the expense of this one line being a bit confusing :)
+main "$@"

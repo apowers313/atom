@@ -1,0 +1,5 @@
+*.txz
+tmp
+*.sqlite
+*.meta
+*~
