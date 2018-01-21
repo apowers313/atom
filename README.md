@@ -21,10 +21,9 @@ https://dist.ato.ms
 
 ``` bash
 sudo make install
-atom init
 ```
 
-The `make install` will install the `atom` script in `/usr/bin` and default configuration files in `/etc/atom`. The `atom init` command will create `$HOME/.atom` and install all the required atom config files there. Every user on a machine that wants to use atom will have to run `atom init`.
+The `make install` will install the `atom` script in `/usr/bin` and default configuration files in `/etc/atom`. You can use `make DESTDIR=/usr/local install` if you would like to install `atom` and the configuration files to another directory.
 
 ## Commands
 
@@ -42,6 +41,17 @@ These commands are features added to `pkg`:
     * Pushes the currently installed packages to the device with `android-serial`. (The `android-serial` can be found by running `adb devices`). If the environment variable `ANDROID_SERIAL` is set, the `android-serial` command line option is not required.
 * `atom manifest-template`
     * Create a boilerplate YAML manifest file with good default values for creating a new package
+
+## Creating a package
+
+Of course, none of this is going to be useful without packages to install. If you would like to contribute a package to the community here are the steps to doing it:
+
+1. Type `atom create-template <package-name>`. This will create a new folder with sample template files.
+2. Edit `package-name/+MANIFEST`. This is the metadata for your package. See [pkg-create](https://www.freebsd.org/cgi/man.cgi?query=pkg-create&sektion=8) for information about the manifest.
+3. Edit `package-name/+DESC`. This is the description of your package.
+4. Edit `package-name/Makefile`. These are the instructions to build your package using [GNU Make](https://www.gnu.org/software/make/manual/make.html).
+5. Type `make` in your package's directory.
+6. [Create an issue on GitHub](https://github.com/apowers313/atom/issues) with your package attached. (The submission process will be a bit different in the future.)
 
 ## Roadmap
 
