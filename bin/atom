@@ -1,37 +1,41 @@
 #!/bin/bash
+
+# general configuration stuff
 VERSION="0.8.0"
 INSTALL_PREFIX=
 CONFIG_DIR="$PREFIX/etc/atom"
 PKG=`which pkg`
 ATOM_HOME="$HOME/.atom"
 ATOM="$PKG -C $ATOM_HOME/pkg.conf"
-MANIFEST_YAML=manifest.yaml
 export INSTALL_AS_USER=1
 
-ANDROID_API=21
-ARCH=arm
-PLATFORM=generic
-TOOLCHAIN=TODO
-HOST_OS=`uname -s`
-HOST_OS_LOWER=`echo $HOST_OS |  tr '[:upper:]' '[:lower:]'`
+# global variables configured by command line arguments
+PKG_PRE_ARGS=
+PKG_CMD=
+ATOM_CMD=
+POST_ARGS=
+DEBUG=0
 
-UNZIP=`which unzip`
-NDK_URL="https://dl.google.com/android/repository/android-ndk-r16b-$HOST_OS_LOWER-x86_64.zip"
-NDK_ZIP="android-ndk-r16b-$HOST_OS_LOWER-x86_64.zip"
-NDK_DIR="android-ndk-r16b"
-ANDROID_NDK_PATH=
-TOOLCHAIN_HOME=$ATOM_HOME/toolchains/android-$ANDROID_API/$ARCH/
-
-ADB=`which adb`
+# stuff for pushing files to devices
 ANDROID_SERIAL=
 STAGING_DIR="$ATOM_HOME/staging/android$ANDROID_API-$ARCH-$PLATFORM"
 DEVICE_DESTINATION=/vendor
 
-PKG_PRE_ARGS=
-PKG_CMD=
-DEBUG=0
-ATOM_CMD=
-POST_ARGS=
+# stuff for creating new packages
+HOST_OS=`uname -s`
+HOST_OS_LOWER=`echo $HOST_OS |  tr '[:upper:]' '[:lower:]'`
+NDK_URL="https://dl.google.com/android/repository/android-ndk-r16b-$HOST_OS_LOWER-x86_64.zip"
+NDK_ZIP="android-ndk-r16b-$HOST_OS_LOWER-x86_64.zip"
+NDK_DIR="android-ndk-r16b"
+ANDROID_NDK_PATH=
+MANIFEST_YAML="+MANIFEST"
+DESC_FILE="+DESC"
+ANDROID_API=21
+ARCH=arm
+MACHINE=armv7
+CROSS_COMPILE=arm-linux-androideabi
+PLATFORM=generic
+TOOLCHAIN_HOME=$ATOM_HOME/toolchains/android-$ANDROID_API/$ARCH/
 
 # XXX DEBUG STUFF - REMOVE
 # ATOM_HOME="/tmp/$HOME/.atom"
@@ -105,11 +109,13 @@ scan_args() {
             add|alias|annotate|audit|autoremove|backup|check|clean|config|create|delete|fetch|help|info|install|lock|plugins|query|register|remove|repo|rquery|search|set|ssh|shell|shlib|stats|unlock|update|updating|upgrade|version|which)
                 PKG_CMD=$arg ;;
             # atom commands
-            init|push|create-template|create-package)
+            init|push|create-template)
                 ATOM_CMD=$arg ;;
 
             *)
+                echo
                 echo "atom: unknown argument: $arg"
+                echo
                 print_usage ;;
         esac
     done
@@ -171,6 +177,14 @@ print_push_help() {
     echo
 }
 
+print_template_help() {
+    echo
+    echo "atom template <directory>"
+    echo
+    echo "creates the template for creating a new atom package in <directory>"
+    echo
+}
+
 # if debugging is turned on (-d flag), print configuration information
 print_configuration() {
     debug "pkg: $PKG"
@@ -186,7 +200,6 @@ run_atom_cmd() {
         init) atom_cmd_init $POST_ARGS;;
         push) atom_cmd_push $POST_ARGS;;
         create-template) atom_cmd_template $POST_ARGS;;
-        create-package) atom_cmd_create_pkg $POST_ARGS;;
     esac
     exit 0
 }
@@ -240,6 +253,7 @@ atom_cmd_push() {
         exit 1
     fi
 
+    ADB=`which adb`
     ADB_CMD="$ADB -s $ANDROID_SERIAL"
     # show configuration
     debug " "
@@ -301,39 +315,22 @@ adb_connect() {
 
 atom_cmd_template() {
 
-cat << EOF > $MANIFEST_YAML
-name: dummy-pkg
-version: 0.1.0
-origin: test/dummy-pkg
-comment: This is just a test
-arch: android:21:arm:32
-abi: Android:21:arm
-www: http://ato.ms
-maintainer: donut@emailme.com
-prefix: examples
-licenselogic: single
-licenses: [MIT]
-desc: <<EOD
-This is the description of the file.
-It is really good.
+    TEMPLATE_DIR=$1
+    if [ "$TEMPLATE_DIR" == "" ]; then
+        echo
+        echo "ERROR: atom template expected a 'directory' argument"
+        echo
+        print_template_help
+        exit 1
+    fi
 
-I mean its just a test. But a good
-test. You know what I'm sayin?
-EOD
-options: {
-  MACHINE: armv7,
-  ARCH: arm,
-  SYSTEM: android,
-  ANDROID-API: "21",
-  CROSS_COMPILE: arm-linux-androideabi
-}
-categories: [blah, ugh, grunt]
-files: {
-  examples/dummy-pkg/foo: -,
-  examples/dummy-pkg/README.md: -,
-}
-EOF
+    create_toolchain
+    debug "Toolchain located at: $TOOLCHAIN_HOME"
 
+    mkdir -p "$TEMPLATE_DIR"
+    create_manifest "$TEMPLATE_DIR/$MANIFEST_YAML"
+    create_makefile "$TEMPLATE_DIR/Makefile"
+    create_desc "$TEMPLATE_DIR/$DESC_FILE"
 }
 
 find_android_ndk() {
@@ -363,9 +360,11 @@ install_android_ndk() {
 }
 
 create_toolchain() {
-    if [ -d $TOOLCHAIN_HOME ]; then
+    if [ -d "$TOOLCHAIN_HOME" ]; then
         return 0;
     fi
+
+    echo "Toolchain for 'android-$ANDROID_API' on '$ARCH' not found at '$TOOLCHAIN_HOME'. Attempting to create ..."
 
     find_android_ndk
     if [ $? -eq 1 ]; then
@@ -379,10 +378,6 @@ create_toolchain() {
     fi
 
     $MKTOOLCHAIN --arch=$ARCH --platform=android-$ANDROID_API --install-dir=$TOOLCHAIN_HOME --stl=libc++
-}
-
-atom_cmd_create_pkg() {
-    create_toolchain
 }
 
 check_prog_dependency() {
@@ -425,6 +420,132 @@ debug() {
     if [ $DEBUG -eq 1 ]; then
         echo $*
     fi
+}
+
+create_manifest() {
+
+echo "Creating manifest file at $1 ..."
+
+cat << EOF > "$1"
+# name of the package
+name: dummy-pkg
+# package version number
+version: 0.1.0
+# the directory of this package in the atom-packages repo
+origin: test/dummy-pkg
+# optional comment
+comment: This is just a test
+www: http://ato.ms
+maintainer: donut@emailme.com
+licenselogic: single
+licenses: [MIT]
+categories: []
+####################################################################
+#                 DO NOT EDIT BELOW THIS LINE
+####################################################################
+# the architect
+arch: android:$ANDROID_API:$ARCH:32
+abi: Android:$ANDROID_API:$ARCH
+prefix: vendor
+options: {
+  MACHINE: $MACHINE,
+  ARCH: $ARCH,
+  SYSTEM: android,
+  ANDROID-API: "$ANDROID_API",
+  CROSS_COMPILE: arm-linux-androideabi
+}
+EOF
+
+}
+
+create_makefile() {
+
+echo "Creating makefile at $1 ..."
+
+TAB=`echo -e "\t"`
+cat << EOF | sed "s/    /$TAB/g" > $1
+# type the URL for downloading your tarball below
+SOURCE_URL==
+# type the name of the tarball after it's downloaded below
+SOURCE_TARBALL=
+# type the name of the directory that is created after the tarball is extracted below
+SOURCE_DIR=
+
+####################################################################
+#                 CROSS-COMPILE VARIABLES
+####################################################################
+
+# these variables are exported to tell other makefiles how to compile for android
+#
+# don't edit these unless you know what you are doing
+
+export ANDROID_TOOLCHAIN=$TOOLCHAIN_HOME
+export ANDROID_API=21
+export MACHINE=$MACHINE
+export SYSTEM=android
+export ARCH=$ARCH
+export CROSS_COMPILE=$CROSS_COMPILE
+
+export ANDROID_TOOLCHAIN_BIN=\$(ANDROID_TOOLCHAIN)/bin
+export ANDROID_SYSROOT=\$(ANDROID_TOOLCHAIN)/sysroot
+export SYSROOT=\$(ANDROID_SYSROOT)
+export PATH:=\$(PATH):\$(ANDROID_TOOLCHAIN_BIN)
+
+export CFLAGS=-fPIE -D__ANDROID_API__=$ANDROID_API
+export CXXFLAGS=-fPIE -D__ANDROID_API__=$ANDROID_API -std=c++11 -I\$(ANDROID_TOOLCHAIN)/include/c++/4.9.x
+export LDFLAGS=-fPIE -pie -L\$(SYSROOT)/usr/lib
+
+####################################################################
+#                 BUILD STUFF
+####################################################################
+
+INSTALL_DIR=\$(shell pwd)/instdir
+all: configure build install package
+.PHONY: all
+
+configure: \$(SOURCE_DIR)
+    cd \$(SOURCE_DIR) && \\
+        ./configure \\
+            --host=arm-linux-androideabi \\
+            --prefix=\$(INSTALL_DIR) \\
+            --with-sysroot=\$(SYSROOT)
+
+build: \$(SOURCE_DIR)
+    cd \$(SOURCE_DIR) && \\
+        make
+.PHONY: build
+
+install: \$(SOURCE_DIR)
+    cd \$(SOURCE_DIR) && \\
+        make install
+.PHONY: install
+
+package:
+    find \$(INSTALL_DIR) -type f | sed 's:^\$(INSTALL_DIR)::g' > files.plist
+    atom -d create -r \$(INSTALL_DIR) -p ./files.plist -m .
+.PHONY: package
+
+\$(SOURCE_TARBALL):
+    wget \$(SOURCE_URL)
+
+\$(SOURCE_DIR): \$(SOURCE_TARBALL)
+    tar xzvf \$(SOURCE_TARBALL)
+
+clean:
+    rm -rf \$(SOURCE_TARBALL) \$(SOURCE_DIR)
+.PHONY: clean
+EOF
+
+}
+
+create_desc() {
+
+echo "Creating description file at $1 ..."
+
+cat << EOF > $1
+Replace this with the description of your package. If you are reading this in your package, you need to edit your +DESC file.
+EOF
+
 }
 
 # only run main after everything else has been defined
