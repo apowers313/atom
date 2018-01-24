@@ -1,8 +1,8 @@
 language: generic
 
 os:
-- linux
 - osx
+- linux
 
 sudo: required
 
@@ -12,7 +12,7 @@ before_install:
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install libarchive; fi
 # install libarchive on linux
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update; fi
-- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libbsd libarchive; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libbsd0 libarchive13; fi
 # install pkg
 - git clone https://github.com/freebsd/pkg.git
 - cd pkg && ./autogen.sh && ./configure && make && sudo make install
