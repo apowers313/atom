@@ -1,5 +1,9 @@
 language: generic
 
+os:
+- linux
+- osx
+
 sudo: required
 
 before_install:
