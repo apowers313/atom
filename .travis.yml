@@ -13,7 +13,7 @@ before_install:
 # install libarchive
 - wget https://github.com/libarchive/libarchive/archive/v3.3.1.tar.gz
 - tar xzf v3.3.1.tar.gz
-- cd libarchive-3.3.1 && ./configure && make && sudo make install
+- cd libarchive-3.3.1 && build/autogen.sh && ./configure && make && sudo make install
 # install pkg
 - git clone https://github.com/freebsd/pkg.git
 - cd pkg && ./autogen.sh && ./configure && make && sudo make install
