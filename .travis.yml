@@ -7,12 +7,13 @@ os:
 sudo: required
 
 before_install:
+- echo $LD_LIBRARY_PATH
 # install libbsd on linux
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update; fi
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libbsd0; fi
 # install libarchive
 - wget https://github.com/libarchive/libarchive/archive/v3.3.1.tar.gz
-- tar xzf v3.3.1.tar.gz
+- tar xzvf v3.3.1.tar.gz
 - cd libarchive-3.3.1 && build/autogen.sh && ./configure && make && sudo make install
 # install pkg
 - git clone https://github.com/freebsd/pkg.git
