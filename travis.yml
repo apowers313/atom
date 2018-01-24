@@ -1,0 +1,9 @@
+language: generic
+
+sudo: required
+
+before_install:
+- git clone https://github.com/freebsd/pkg.git
+- cd pkg && ./autogen.sh && ./configure && make && sudo make install
+- sudo make install
+script: make test
