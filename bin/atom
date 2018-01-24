@@ -37,6 +37,9 @@ CROSS_COMPILE=arm-linux-androideabi
 PLATFORM=generic
 TOOLCHAIN_HOME=$ATOM_HOME/toolchains/android-$ANDROID_API/$ARCH/
 
+# stuff for installing files
+VENDOR_ROOT=$ATOM_HOME/vendor/android-$ANDROID_API/$ARCH/
+
 # XXX DEBUG STUFF - REMOVE
 # ATOM_HOME="/tmp/$HOME/.atom"
 DEVICE_DESTINATION="/data/local/tmp"
@@ -53,7 +56,9 @@ main () {
     print_configuration
 
     if [ "$ATOM_CMD" == "" ] && [ "$PKG_CMD" == "" ]; then
+        echo
         echo "atom: no commands specified"
+        echo
         print_usage
     fi
 
@@ -105,8 +110,15 @@ scan_args() {
                 shift ;;
             # don't allow these args, they'll mess up atom
             -j|-c|-r|-C|-R) disallowed_arg $arg ;;
+            # install cmd
+            install)
+                PKG_CMD=$arg
+                debug "Installing files to $VENDOR_ROOT ..."
+                pkg_push_arg "-r"
+                pkg_push_arg "$VENDOR_ROOT"
+                ;;
             # pkg commands
-            add|alias|annotate|audit|autoremove|backup|check|clean|config|create|delete|fetch|help|info|install|lock|plugins|query|register|remove|repo|rquery|search|set|ssh|shell|shlib|stats|unlock|update|updating|upgrade|version|which)
+            add|alias|annotate|audit|autoremove|backup|check|clean|config|create|delete|fetch|help|info|lock|plugins|query|register|remove|repo|rquery|search|set|ssh|shell|shlib|stats|unlock|update|updating|upgrade|version|which)
                 PKG_CMD=$arg ;;
             # atom commands
             init|push|create-template)
@@ -206,7 +218,7 @@ run_atom_cmd() {
 
 atom_cmd_init() {
     if [ -d $ATOM_HOME ]; then
-        echo "atom home directory exists at: $ATOM_HOME"
+        debug "atom home directory exists at: $ATOM_HOME"
         return 0
     fi
 
@@ -424,29 +436,42 @@ debug() {
 
 create_manifest() {
 
-echo "Creating manifest file at $1 ..."
+echo "Creating manifest file: '$1' ..."
 
 cat << EOF > "$1"
 # name of the package
-name: dummy-pkg
+name: package-name
+
 # package version number
-version: 0.1.0
+version: 0.0.1
+
 # the directory of this package in the atom-packages repo
-origin: test/dummy-pkg
-# optional comment
-comment: This is just a test
-www: http://ato.ms
-maintainer: donut@emailme.com
+origin: none
+
+# comment is a one line description of the package
+comment: This is a description of your package that will show up in search
+
+# the main website for the program
+www: http://package.com
+
+# the package creator's email address
+maintainer: your@email.address.com
+
+# how the license array should be interpreted
 licenselogic: single
+
+# what type of license(s) are applicable to the software
 licenses: [MIT]
+
+# categories of the package
 categories: []
+
 ####################################################################
 #                 DO NOT EDIT BELOW THIS LINE
 ####################################################################
-# the architect
 arch: android:$ANDROID_API:$ARCH:32
 abi: Android:$ANDROID_API:$ARCH
-prefix: vendor
+prefix: /
 options: {
   MACHINE: $MACHINE,
   ARCH: $ARCH,
@@ -460,7 +485,7 @@ EOF
 
 create_makefile() {
 
-echo "Creating makefile at $1 ..."
+echo "Creating makefile: '$1' ..."
 
 TAB=`echo -e "\t"`
 cat << EOF | sed "s/    /$TAB/g" > $1
@@ -540,7 +565,7 @@ EOF
 
 create_desc() {
 
-echo "Creating description file at $1 ..."
+echo "Creating description file: '$1' ..."
 
 cat << EOF > $1
 Replace this with the description of your package. If you are reading this in your package, you need to edit your +DESC file.
