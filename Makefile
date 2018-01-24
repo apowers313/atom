@@ -49,3 +49,7 @@ install-etc:
 uninstall:
 	rm -rf "" $(CONFIG_DIR) $(PROG)
 .PHONY: uninstall
+
+test:
+	bats test/main.bats
+.PHONY: test
