@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# base settings
+PROG=`basename $0`
+ARGS="${@}"
+MOCK_LOG=$PROG.mocklog
+# echo MOCK_OUTPUT: ${MOCK_OUTPUT[@]}
+MOCK_OUTPUT_LEN=${#MOCK_OUTPUT[@]} # number of elements in MOCK_OUTPUT array
+
+# functionality to help with mock memory
+COUNTFILE=.mockcount.tmp
+load_mock_count() {
+    COUNTFILE=.mockcount.tmp
+    touch $COUNTFILE
+    source $COUNTFILE
+}
+
+save_mock_count() {
+    count_name=${prog}_count
+    TMPFILE=`tempfile`
+    mv $COUNTFILE $TMPFILE
+    grep -v ${count_name} $TMPFILE > $COUNTFILE
+    rm $TMPFILE
+    echo ${prog}_count=${!count_name} >> $COUNTFILE
+}
+
+incr_mock_count() {
+    prog=$1
+    count_name=${prog}_count
+    if [ "${!count_name}" = "" ]; then
+        eval ${prog}_count=0
+    else
+        eval ${prog}_count=`expr ${!count_name} + 1`
+    fi
+    # echo ${count_name}: ${!count_name}
+    export ${prog}_count
+}
+
+# load / increment / save the number of times this mock has been run
+load_mock_count
+incr_mock_count $PROG
+save_mock_count
+
+# load the output for this run
+iter_count_name=${PROG}_count
+MOCK_ITER=${!iter_count_name}
+echo MOCK_ITER: $MOCK_ITER
+echo MOCK_OUTPUT_LEN: $MOCK_OUTPUT_LEN
+if [ $MOCK_OUTPUT_LEN -gt 0 ]; then
+    echo MOCK_OUTPUT: ${MOCK_OUTPUT[$MOCK_ITER]}
+fi
+
+# save the log of what our arguments were
+touch $MOCK_LOG
+echo $ARGS >> $MOCK_LOG
+
+# exit successfully
+exit 0

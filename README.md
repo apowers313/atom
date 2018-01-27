@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/apowers313/atom.svg?branch=master)](https://travis-ci.org/apowers313/atom)
+
 ## Android Terminal Object Manager (atom)
 
 This is a package manager for embedded Android development. It installs binaries and shared libraries on rooted Android devices, like the [Raspberry Pi](https://developer.android.com/things/hardware/raspberrypi.html) and the [ASUS Tinker Board](https://www.asus.com/us/Single-Board-Computer/Tinker-Board/).

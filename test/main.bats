@@ -2,6 +2,17 @@
 # See also:
 # https://github.com/sstephenson/bats
 
+# setup mocks
+export PATH="`pwd`/test/helper":$PATH
+
+setup() {
+    rm -f *.mocklog .mockcount.tmp
+}
+
+teardown() {
+    rm -f *.mocklog .mockcount.tmp
+}
+
 @test "no arguments" {
     run atom
     [ "$status" -eq 0 ]
@@ -26,6 +37,13 @@
 
 @test "push to serial" {
     skip
+    export ${MOCK_OUTPUT[0]}
+    atom push 10.100.100.150
+    [ -s adb.mocklog ]
+
+    diff adb.mocklog <(cat << EOF
+-C $HOME/.atom/pkg.conf -r $HOME/.atom/vendor/android-21/arm/ install foobar
+EOF)
 }
 
 @test "create-template with no args" {
@@ -41,9 +59,19 @@
 }
 
 @test "install" {
-    skip
+    run atom install foobar
+    [ -s pkg.mocklog ]
+
+    diff pkg.mocklog <(cat << EOF
+-C $HOME/.atom/pkg.conf -r $HOME/.atom/vendor/android-21/arm/ install foobar
+EOF)
 }
 
 @test "search" {
-    skip
+    run atom search blahpkg
+    [ -s pkg.mocklog ]
+
+    diff pkg.mocklog <(cat << EOF
+-C $HOME/.atom/pkg.conf search blahpkg
+EOF)
 }

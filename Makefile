@@ -53,3 +53,7 @@ uninstall:
 test:
 	bats test/main.bats
 .PHONY: test
+
+clean:
+	rm -rf *.mocklog
+.PHONY: clean
