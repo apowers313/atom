@@ -12,7 +12,6 @@ before_install:
 # install libbsd on linux
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update; fi
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libbsd-dev; fi
-- ls /lib
 # install libarchive
 - wget https://github.com/libarchive/libarchive/archive/v3.3.1.tar.gz
 - tar xzvf v3.3.1.tar.gz
@@ -24,8 +23,4 @@ before_install:
 - cd ..
 # install atom
 - sudo make install
-- which atom
-- ls
-- pwd
-- atom
 script: make test
