@@ -17,9 +17,11 @@ before_install:
 - wget https://github.com/libarchive/libarchive/archive/v3.3.1.tar.gz
 - tar xzvf v3.3.1.tar.gz
 - cd libarchive-3.3.1 && build/autogen.sh && ./configure && make && sudo make install
+- cd ..
 # install pkg
 - git clone https://github.com/freebsd/pkg.git
 - cd pkg && ./autogen.sh && ./configure && make && sudo make install
+- cd ..
 # install atom
 - sudo make install
 script: make test
