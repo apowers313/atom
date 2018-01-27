@@ -24,4 +24,8 @@ before_install:
 - cd ..
 # install atom
 - sudo make install
+- which atom
+- ls
+- pwd
+- atom
 script: make test
