@@ -16,11 +16,6 @@ ATOM_CMD=
 POST_ARGS=
 DEBUG=0
 
-# stuff for pushing files to devices
-ANDROID_SERIAL=
-STAGING_DIR="$ATOM_HOME/staging/android$ANDROID_API-$ARCH-$PLATFORM"
-DEVICE_DESTINATION=/vendor
-
 # stuff for creating new packages
 HOST_OS=`uname -s`
 HOST_OS_LOWER=`echo $HOST_OS |  tr '[:upper:]' '[:lower:]'`
@@ -36,6 +31,11 @@ MACHINE=armv7
 CROSS_COMPILE=arm-linux-androideabi
 PLATFORM=generic
 TOOLCHAIN_HOME=$ATOM_HOME/toolchains/android-$ANDROID_API/$ARCH/
+
+# stuff for pushing files to devices
+ANDROID_SERIAL=
+STAGING_DIR="$ATOM_HOME/staging/android$ANDROID_API-$ARCH-$PLATFORM"
+DEVICE_DESTINATION=/vendor
 
 # stuff for installing files
 VENDOR_ROOT=$ATOM_HOME/vendor/android-$ANDROID_API/$ARCH/
@@ -223,7 +223,7 @@ atom_cmd_init() {
     fi
 
     echo "atom init running ..."
-    mkdir -p $ATOM_HOME
+    mkdir -p "$ATOM_HOME"
     cp -a $CONFIG_DIR/ $ATOM_HOME
 
     SED_HOME=`echo $HOME | sed 's/\\//\\\\\\//g'`
@@ -246,10 +246,11 @@ atom_cmd_push() {
     fi
 
     if [ ! -d $STAGING_DIR ]; then
-        echo
-        echo "ERROR: the staging directory '$STAGING_DIR' is missing or not a valid directory."
-        print_push_help
-        exit 1
+        # echo
+        # echo "ERROR: the staging directory '$STAGING_DIR' is missing or not a valid directory."
+        # print_push_help
+        # exit 1
+        mkdir -p "$STAGING_DIR"
     fi
 
     # if the second argument is set, use that for ANDROID_SERIAL
@@ -283,7 +284,7 @@ atom_cmd_push() {
 
     # make sure device is ready
     STATE=`$ADB_CMD get-state`
-    if [ x$STATE != xdevice ]; then
+    if [ "$STATE" != "device" ]; then
         echo
         echo "ERROR: device $ANDROID_SERIAL is not ready"
         echo
