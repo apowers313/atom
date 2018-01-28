@@ -23,4 +23,5 @@ before_install:
 - cd ..
 # install atom
 - sudo make install
+- hash -r
 script: make test
