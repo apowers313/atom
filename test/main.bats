@@ -36,13 +36,20 @@ teardown() {
 }
 
 @test "push to serial" {
-    skip
-    export ${MOCK_OUTPUT[0]}
+    mock.adb.1() {
+        echo "device"
+    }
+    export -f mock.adb.1
     atom push 10.100.100.150
     [ -s adb.mocklog ]
 
     diff adb.mocklog <(cat << EOF
--C $HOME/.atom/pkg.conf -r $HOME/.atom/vendor/android-21/arm/ install foobar
+connect 10.100.100.150
+-s 10.100.100.150 get-state
+-s 10.100.100.150 root
+connect 10.100.100.150
+-s 10.100.100.150 remount
+-s 10.100.100.150 push $HOME/.atom/staging/android21-arm-generic/* /data/local/tmp
 EOF)
 }
 

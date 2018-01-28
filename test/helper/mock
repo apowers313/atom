@@ -3,12 +3,13 @@
 # base settings
 PROG=`basename $0`
 ARGS="${@}"
-MOCK_LOG=$PROG.mocklog
-# echo MOCK_OUTPUT: ${MOCK_OUTPUT[@]}
-MOCK_OUTPUT_LEN=${#MOCK_OUTPUT[@]} # number of elements in MOCK_OUTPUT array
+if [ "$MOCK_DIR" = "" ]; then
+    MOCK_DIR=.
+fi
+MOCK_LOG=$MOCK_DIR/$PROG.mocklog
+COUNTFILE=$MOCK_DIR/.mockcount.tmp
 
 # functionality to help with mock memory
-COUNTFILE=.mockcount.tmp
 load_mock_count() {
     COUNTFILE=.mockcount.tmp
     touch $COUNTFILE
@@ -41,13 +42,10 @@ load_mock_count
 incr_mock_count $PROG
 save_mock_count
 
-# load the output for this run
 iter_count_name=${PROG}_count
-MOCK_ITER=${!iter_count_name}
-echo MOCK_ITER: $MOCK_ITER
-echo MOCK_OUTPUT_LEN: $MOCK_OUTPUT_LEN
-if [ $MOCK_OUTPUT_LEN -gt 0 ]; then
-    echo MOCK_OUTPUT: ${MOCK_OUTPUT[$MOCK_ITER]}
+fn_name=mock.${PROG}.${!iter_count_name}
+if [ "`type -t ${fn_name}`" = "function" ]; then
+    eval ${fn_name}
 fi
 
 # save the log of what our arguments were
